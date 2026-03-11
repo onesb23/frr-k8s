@@ -26,6 +26,7 @@ Kubernetes: `>= 1.19.0-0`
 | crds.validationFailurePolicy | string | `"Fail"` | Validation failure policy for CRDs. Can be Fail or Ignore. |
 | frrk8s.affinity | object | `{}` | Affinity for pod assignment. |
 | frrk8s.alwaysBlock | string | `""` | A comma separated list of cidrs to always block for incoming routes. |
+| frrk8s.bgpDebounceTimeout | integer | `nil` | BGP debounce timeout for FRR configuration reloads, in milliseconds. Default (when unset) is 3000 ms.This feature is experimental |
 | frrk8s.disableCertRotation | bool | `false` | Specifies whether the cert rotator works as part of the webhook. |
 | frrk8s.frr.acceptIncomingBGPConnections | bool | `false` | Allow FRR to accept incoming BGP connections. |
 | frrk8s.frr.image.pullPolicy | string | `nil` | The FRR image pull policy. |
