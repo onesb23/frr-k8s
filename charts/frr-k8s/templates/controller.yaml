@@ -218,8 +218,8 @@ spec:
           cp -f /frr-reloader.sh /etc/frr_reloader/
         {{- end }}
         volumeMounts:
-          - name: reloader
-            mountPath: /etc/frr_reloader
+        - name: reloader
+          mountPath: /etc/frr_reloader
       # Copies the metrics exporter
       - name: cp-metrics
         image: {{ .Values.frrk8s.image.repository }}:{{ .Values.frrk8s.image.tag | default .Chart.AppVersion }}
@@ -585,7 +585,7 @@ spec:
         - --tls-private-key-file=/etc/metrics/tls.key
         - --tls-cert-file=/etc/metrics/tls.crt
         {{- end }}
-        {{- end }}`
+        {{- end }}
         ports:
         - containerPort: {{ .Values.prometheus.rbacProxyFrr.secureMetricsPort }}
           name: metricshttps
