@@ -312,7 +312,7 @@ spec:
           httpGet:
             path: /metrics
             port: monitoring
-            host: {{ .Values.prometheus.metricsBindAddress }}
+            host: {{ template "prometheus.metricsAddress" . }}
           initialDelaySeconds: {{ .Values.frrk8s.livenessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.frrk8s.livenessProbe.periodSeconds }}
           timeoutSeconds: {{ .Values.frrk8s.livenessProbe.timeoutSeconds }}
@@ -324,7 +324,7 @@ spec:
           httpGet:
             path: /metrics
             port: monitoring
-            host: {{ .Values.prometheus.metricsBindAddress }}
+            host: {{ template "prometheus.metricsAddress" . }}
           initialDelaySeconds: {{ .Values.frrk8s.readinessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.frrk8s.readinessProbe.periodSeconds }}
           timeoutSeconds: {{ .Values.frrk8s.readinessProbe.timeoutSeconds }}
@@ -401,7 +401,7 @@ spec:
           httpGet:
             path: /livez
             port: {{ .Values.frrk8s.frr.metricsPort }}
-            host: {{ .Values.frrk8s.frr.metricsBindAddress }}
+            host: {{ template "frrk8s.frr.metricsAddress" . }}
           periodSeconds: {{ .Values.frrk8s.livenessProbe.periodSeconds }}
           failureThreshold: {{ .Values.frrk8s.livenessProbe.failureThreshold }}
         {{- end }}
@@ -410,7 +410,7 @@ spec:
           httpGet:
             path: /livez
             port: {{ .Values.frrk8s.frr.metricsPort }}
-            host: {{ .Values.frrk8s.frr.metricsBindAddress }}
+            host: {{ template "frrk8s.frr.metricsAddress" . }}
           failureThreshold: {{ .Values.frrk8s.startupProbe.failureThreshold }}
           periodSeconds: {{ .Values.frrk8s.startupProbe.periodSeconds }}
         {{- end }}
@@ -541,7 +541,7 @@ spec:
         {{- else }}
         - --logtostderr
         - --secure-listen-address=:{{ .Values.prometheus.secureMetricsPort }}
-        - --upstream=http://{{.Values.prometheus.metricsBindAddress}}:{{ .Values.prometheus.metricsPort }}/
+        - --upstream=http://{{ template "prometheus.metricsAddress" . }}:{{ .Values.prometheus.metricsPort }}/
         - --tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256
         {{- if .Values.prometheus.metricsTLSSecret }}
         - --tls-private-key-file=/etc/metrics/tls.key
@@ -580,7 +580,7 @@ spec:
         - --logtostderr
         - --secure-listen-address=:{{ .Values.frrk8s.frr.secureMetricsPort }}
         - --tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256
-        - --upstream=http://{{ .Values.frrk8s.frr.metricsBindAddress }}:{{ .Values.frrk8s.frr.metricsPort }}/
+        - --upstream=http://{{ template "frrk8s.frr.metricsAddress" . }}:{{ .Values.frrk8s.frr.metricsPort }}/
         {{- if .Values.prometheus.metricsTLSSecret }}
         - --tls-private-key-file=/etc/metrics/tls.key
         - --tls-cert-file=/etc/metrics/tls.crt

@@ -23,6 +23,9 @@ prometheus:
   # bind addr frr-k8s will use for metrics
   metricsBindAddress: 127.0.0.1
 
+  # if empty, used value from 'metricsBindAddress'
+  metricsAddress: ""
+
   # port frr-k8s will listen on for metrics
   metricsPort: 7572
 
@@ -169,7 +172,7 @@ frrk8s:
   ## Enabling this proved useful for the webhook's stability when it is redeployed multiple times in succession.
   restartOnRotatorSecretRefresh: false
   ## If true, then used manual created configMap with name <frrk8s.fullname>-frr-startup-extra
-  extraConfigsStartup: false
+  extraConfigsStartup: true
   ## Additional specs for custom initContainers
   extraInitContainers: []
   ## Additional specs for custom containers
@@ -189,6 +192,8 @@ frrk8s:
       tag: 10.4.1
       pullPolicy:
     metricsBindAddress: 127.0.0.1
+    # if empty, used value from 'metricsBindAddress'
+    metricsAddress: ""
     metricsPort: 7573
     resources: {}
     secureMetricsPort: 9141
