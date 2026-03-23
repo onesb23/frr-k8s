@@ -46,11 +46,28 @@ prometheus:
   # required when " .Values.prometheus.rbacPrometheus == true " and " prometheus.serviceMonitor.enabled=true "
   namespace: ""
 
-  # the image to be used for the kuberbacproxy container
+  # the spec to be used for the kube-rbac-proxy and kube-rbac-proxy-frr container
   rbacProxy:
     repository: gcr.io/kubebuilder/kube-rbac-proxy
     tag: v0.12.0
     pullPolicy:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 20Mi
+    extraCommand: []
+    extraArgs: []
+
+  rbacProxyFrr:
+    repository: gcr.io/kubebuilder/kube-rbac-proxy
+    tag: v0.12.0
+    pullPolicy:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 20Mi
+    extraCommand: []
+    extraArgs: []
 
   # Prometheus Operator ServiceMonitors.
   serviceMonitor:
@@ -115,16 +132,13 @@ frrk8s:
   ## By default secretName: {{ "metallb.fullname" }}-memberlist
   ##
   # secretName:
-  resources: {}
-    # limits:
-      # cpu: 100m
-      # memory: 100Mi
   nodeSelector: {}
   tolerations: []
   priorityClassName: ""
   affinity: {}
   ## Selects which runtime class will be used by the pod.
   runtimeClassName: ""
+  annotations: {}
   podAnnotations: {}
   labels:
     app: frr-k8s
@@ -154,7 +168,21 @@ frrk8s:
   ## Specifies whether the pod restarts when the rotator refreshes the cert secret.
   ## Enabling this proved useful for the webhook's stability when it is redeployed multiple times in succession.
   restartOnRotatorSecretRefresh: false
-  # frr contains configuration specific to the FRR container,
+  ## If true, then used manual created configMap with name <frrk8s.fullname>-frr-startup-extra
+  extraConfigsStartup: false
+  ## Additional specs for custom initContainers
+  extraInitContainers: []
+  ## Additional specs for custom containers
+  extraContainers: []
+  # controller contains configuration specific to the "controller" container,
+  controller:
+    resources: {}
+    #  limits:
+    #    cpu: 100m
+    #    memory: 100Mi
+    extraCommand: []
+    extraArgs: []
+  # frr contains configuration specific to the "frr" container,
   frr:
     image:
       repository: quay.io/frrouting/frr
@@ -165,13 +193,43 @@ frrk8s:
     resources: {}
     secureMetricsPort: 9141
     acceptIncomingBGPConnections: false
+    extraCommand: []
+    extraArgs: []
+  # reloader contains configuration specific to the "reloader" container,
   reloader:
     resources: {}
+    extraCommand: []
+    extraArgs: []
+  # frrMetrics contains configuration specific to the "frr-metrics" container,
   frrMetrics:
     resources: {}
+    extraCommand: []
+    extraArgs: []
+  # frrStatus contains configuration specific to the "frr-status" container,
   frrStatus:
     pollInterval: "2m"
     resources: {}
+    extraCommand: []
+    extraArgs: []
+  # frrStatus contains configuration specific to the "frr-status" container
+  # in deployment <frrk8s.fullname>-statuscleaner,
+  statusCleaner:
+    resources: {}
+    extraCommand: []
+    extraArgs: []
+  # cpFrrFiles contains configuration specific to the "cp-frr-files" initContainer,
+  cpFrrFiles:
+    extraCommand: []
+  # cpReloader contains configuration specific to the "cp-reloader" initContainer,
+  cpReloader:
+    extraCommand: []
+  # cpMetrics contains configuration specific to the "cp-metrics" initContainer,
+  cpMetrics:
+    extraCommand: []
+  # cpFrrStatus contains configuration specific to the "cp-frr-status" initContainer
+  cpFrrStatus:
+    extraCommand: []
 crds:
   enabled: true
   validationFailurePolicy: Fail
+
