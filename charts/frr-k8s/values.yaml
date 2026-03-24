@@ -172,7 +172,7 @@ frrk8s:
   ## Enabling this proved useful for the webhook's stability when it is redeployed multiple times in succession.
   restartOnRotatorSecretRefresh: false
   ## If true, then used manual created configMap with name <frrk8s.fullname>-frr-startup-extra
-  extraConfigsStartup: true
+  extraConfigsStartup: false
   ## Additional specs for custom initContainers
   extraInitContainers: []
   ## Additional specs for custom containers
