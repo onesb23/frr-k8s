@@ -52,7 +52,7 @@ prometheus:
   # the spec to be used for the kube-rbac-proxy and kube-rbac-proxy-frr container
   rbacProxy:
     repository: gcr.io/kubebuilder/kube-rbac-proxy
-    tag: v0.12.0
+    tag: v0.13.1
     pullPolicy:
     resources:
       requests:
@@ -63,7 +63,7 @@ prometheus:
 
   rbacProxyFrr:
     repository: gcr.io/kubebuilder/kube-rbac-proxy
-    tag: v0.12.0
+    tag: v0.13.1
     pullPolicy:
     resources:
       requests:
