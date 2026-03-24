@@ -587,7 +587,7 @@ spec:
         {{- end }}
         {{- end }}
         ports:
-        - containerPort: {{ .Values.prometheus.secureMetricsPort }}
+        - containerPort: {{ .Values.frrk8s.frr.secureMetricsPort }}
           name: metricshttps
         {{- with .Values.prometheus.rbacProxyFrr.resources }}
         resources:
