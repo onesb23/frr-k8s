@@ -21,7 +21,10 @@ import (
 	"k8s.io/utils/ptr"
 )
 
-const testData = "testdata/"
+const (
+	testDebounceTimeout = time.Millisecond
+	testData            = "testdata/"
+)
 
 var update = flag.Bool("update", false, "update .golden files")
 
@@ -101,7 +104,7 @@ var emptyCB = func() {}
 func TestSingleSession(t *testing.T) {
 	testSetup(t)
 	ctx, cancel := context.WithCancel(context.Background())
-	frr := NewFRR(ctx, emptyCB)
+	frr := NewFRR(ctx, emptyCB, testDebounceTimeout)
 	defer cancel()
 
 	config := Config{
@@ -138,7 +141,7 @@ func TestSingleSession(t *testing.T) {
 func TestTwoRoutersTwoNeighbors(t *testing.T) {
 	testSetup(t)
 	ctx, cancel := context.WithCancel(context.Background())
-	frr := NewFRR(ctx, emptyCB)
+	frr := NewFRR(ctx, emptyCB, testDebounceTimeout)
 	defer cancel()
 
 	config := Config{
@@ -204,7 +207,7 @@ func TestTwoRoutersTwoNeighbors(t *testing.T) {
 func TestTwoSessionsAcceptAll(t *testing.T) {
 	testSetup(t)
 	ctx, cancel := context.WithCancel(context.Background())
-	frr := NewFRR(ctx, emptyCB)
+	frr := NewFRR(ctx, emptyCB, testDebounceTimeout)
 	defer cancel()
 
 	config := Config{
@@ -243,7 +246,7 @@ func TestTwoSessionsAcceptAll(t *testing.T) {
 func TestTwoSessionsAcceptSomeV4(t *testing.T) {
 	testSetup(t)
 	ctx, cancel := context.WithCancel(context.Background())
-	frr := NewFRR(ctx, emptyCB)
+	frr := NewFRR(ctx, emptyCB, testDebounceTimeout)
 	defer cancel()
 
 	config := Config{
@@ -296,7 +299,7 @@ func TestTwoSessionsAcceptSomeV4(t *testing.T) {
 func TestTwoSessionsAcceptV4AndV6(t *testing.T) {
 	testSetup(t)
 	ctx, cancel := context.WithCancel(context.Background())
-	frr := NewFRR(ctx, emptyCB)
+	frr := NewFRR(ctx, emptyCB, testDebounceTimeout)
 	defer cancel()
 
 	config := Config{
@@ -416,7 +419,7 @@ func TestSingleSessionWithEBGPMultihop(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	frr := NewFRR(ctx, emptyCB)
+	frr := NewFRR(ctx, emptyCB, testDebounceTimeout)
 
 	config := Config{
 		Routers: []*RouterConfig{
@@ -454,7 +457,7 @@ func TestSingleSessionWithIPv6SingleHop(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	frr := NewFRR(ctx, emptyCB)
+	frr := NewFRR(ctx, emptyCB, testDebounceTimeout)
 
 	config := Config{
 		Routers: []*RouterConfig{
@@ -492,7 +495,7 @@ func TestMultipleNeighborsOneV4AndOneV6(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	frr := NewFRR(ctx, emptyCB)
+	frr := NewFRR(ctx, emptyCB, testDebounceTimeout)
 
 	config := Config{
 		Routers: []*RouterConfig{
@@ -541,7 +544,7 @@ func TestMultipleNeighborsOneV4AndOneV6DualStackIPFamily(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	frr := NewFRR(ctx, emptyCB)
+	frr := NewFRR(ctx, emptyCB, testDebounceTimeout)
 
 	config := Config{
 		Routers: []*RouterConfig{
@@ -589,7 +592,7 @@ func TestMultipleRoutersMultipleNeighs(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	frr := NewFRR(ctx, emptyCB)
+	frr := NewFRR(ctx, emptyCB, testDebounceTimeout)
 
 	config := Config{
 		Routers: []*RouterConfig{
@@ -665,7 +668,7 @@ func TestSingleSessionWithEBGPMultihopAndExtras(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	frr := NewFRR(ctx, emptyCB)
+	frr := NewFRR(ctx, emptyCB, testDebounceTimeout)
 
 	config := Config{
 		Routers: []*RouterConfig{
@@ -704,7 +707,7 @@ func TestSingleSessionWithAlwaysBlock(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	frr := NewFRR(ctx, emptyCB)
+	frr := NewFRR(ctx, emptyCB, testDebounceTimeout)
 
 	config := Config{
 		Routers: []*RouterConfig{
@@ -776,7 +779,7 @@ func TestSingleSessionWithGracefulRestart(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	frr := NewFRR(ctx, emptyCB)
+	frr := NewFRR(ctx, emptyCB, testDebounceTimeout)
 
 	config := Config{
 		Routers: []*RouterConfig{
@@ -809,7 +812,7 @@ func TestMultipleRoutersImportVRFs(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	frr := NewFRR(ctx, emptyCB)
+	frr := NewFRR(ctx, emptyCB, testDebounceTimeout)
 
 	config := Config{
 		Routers: []*RouterConfig{
@@ -854,7 +857,7 @@ func TestMultipleRoutersImportVRFs(t *testing.T) {
 func TestSingleSessionWithInternalASN(t *testing.T) {
 	testSetup(t)
 	ctx, cancel := context.WithCancel(context.Background())
-	frr := NewFRR(ctx, emptyCB)
+	frr := NewFRR(ctx, emptyCB, testDebounceTimeout)
 	defer cancel()
 
 	config := Config{
@@ -889,7 +892,7 @@ func TestSingleSessionWithInternalASN(t *testing.T) {
 func TestSingleSessionWithExternalASN(t *testing.T) {
 	testSetup(t)
 	ctx, cancel := context.WithCancel(context.Background())
-	frr := NewFRR(ctx, emptyCB)
+	frr := NewFRR(ctx, emptyCB, testDebounceTimeout)
 	defer cancel()
 
 	config := Config{
@@ -923,7 +926,7 @@ func TestSingleSessionWithExternalASN(t *testing.T) {
 func TestSingleUnnumberedSession(t *testing.T) {
 	testSetup(t)
 	ctx, cancel := context.WithCancel(context.Background())
-	frr := NewFRR(ctx, emptyCB)
+	frr := NewFRR(ctx, emptyCB, testDebounceTimeout)
 	defer cancel()
 
 	config := Config{
@@ -963,7 +966,7 @@ func TestSingleUnnumberedSession(t *testing.T) {
 func TestLogLevelDebugging(t *testing.T) {
 	testSetup(t)
 	ctx, cancel := context.WithCancel(context.Background())
-	frr := NewFRR(ctx, emptyCB)
+	frr := NewFRR(ctx, emptyCB, testDebounceTimeout)
 	defer cancel()
 
 	config := Config{

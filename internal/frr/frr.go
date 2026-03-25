@@ -55,10 +55,9 @@ func (f *FRR) ApplyConfig(config *Config) error {
 	return nil
 }
 
-var debounceTimeout = 3 * time.Second
 var failureTimeout = time.Second * 5
 
-func NewFRR(ctx context.Context, onStatusChanged StatusChanged) *FRR {
+func NewFRR(ctx context.Context, onStatusChanged StatusChanged, debounceTimeout time.Duration) *FRR {
 	res := &FRR{
 		reloadConfig:    make(chan reloadEvent),
 		onStatusChanged: onStatusChanged,
