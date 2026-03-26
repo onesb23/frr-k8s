@@ -155,7 +155,7 @@ func validateConfig(frrConfig *v1beta1.FRRConfiguration) ([]string, error) {
 	}
 
 	if containsDisableMP(frrConfig.Spec.BGP.Routers) {
-		warnings = append(warnings, "disableMP is deprecated and will be removed in a future release")
+		warnings = append(warnings, "disableMP is deprecated, is ignored and will be removed in a future release")
 	}
 
 	existingFRRConfigurations, err := getFRRConfigurations()
@@ -243,6 +243,7 @@ var getNodes = func() ([]corev1.Node, error) {
 func containsDisableMP(routers []v1beta1.Router) bool {
 	for _, r := range routers {
 		for _, n := range r.Neighbors {
+			//nolint:staticcheck // DisableMP is deprecated but still supported for backward compatibility
 			if n.DisableMP {
 				return true
 			}

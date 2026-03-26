@@ -99,7 +99,7 @@ data:
     frr defaults traditional
     hostname Router
     line vty
-    log file /etc/frr/frr.log informational
+    log stdout informational
 ---
 apiVersion: apps/v1
 kind: DaemonSet
@@ -169,10 +169,14 @@ spec:
         emptyDir: {}
       - name: frr-status
         emptyDir: {}
-      {{- if .Values.prometheus.metricsTLSSecret }}
+      - name: frr-lib
+        emptyDir: {}
+      - name: frr-tmp
+        emptyDir: {}
+      {{- if .Values.tls.metricsTLSSecret }}
       - name: metrics-certs
         secret:
-          secretName: {{ .Values.prometheus.metricsTLSSecret }}
+          secretName: {{ .Values.tls.metricsTLSSecret }}
       {{- end }}
       initContainers:
       # Specs for custom extra initContainers
@@ -283,12 +287,27 @@ spec:
         {{- else }}
         - "--node-name=$(NODE_NAME)"
         - "--namespace=$(NAMESPACE)"
-        - "--metrics-bind-address={{.Values.prometheus.metricsBindAddress}}:{{ .Values.prometheus.metricsPort }}"
+        - "--metrics-bind-address=0.0.0.0:{{ .Values.prometheus.secureMetricsPort }}"
         {{- with .Values.frrk8s.logLevel }}
         - --log-level={{ . }}
         {{- end }}
         {{- if .Values.frrk8s.alwaysBlock }}
         - --always-block={{ .Values.frrk8s.alwaysBlock }}
+        {{- end }}
+        {{- if .Values.frrk8s.bgpDebounceTimeout }}
+        - --bgp-debounce-timeout={{ .Values.frrk8s.bgpDebounceTimeout }}
+        {{- end }}
+        {{- if .Values.tls.cipherSuites }}
+        - --tls-cipher-suites={{ .Values.tls.cipherSuites }}
+        {{- end }}
+        {{- if .Values.tls.curvePreferences }}
+        - --tls-curve-preferences={{ .Values.tls.curvePreferences }}
+        {{- end }}
+        {{- if .Values.tls.minVersion }}
+        - --tls-min-version={{ .Values.tls.minVersion }}
+        {{- end }}
+        {{- if .Values.tls.metricsTLSSecret }}
+        - --metrics-cert-dir=/etc/metrics
         {{- end }}
         {{- end }}
         env:
@@ -305,14 +324,14 @@ spec:
             fieldRef:
               fieldPath: metadata.namespace
         ports:
-        - containerPort: {{ .Values.prometheus.metricsPort }}
-          name: monitoring
+        - containerPort: {{ .Values.prometheus.secureMetricsPort }}
+          name: metricshttps
         {{- if .Values.frrk8s.livenessProbe.enabled }}
         livenessProbe:
           httpGet:
-            path: /metrics
-            port: monitoring
-            host: {{ template "prometheus.metricsAddress" . }}
+            path: /healthz
+            port: 7572
+            host: 127.0.0.1
           initialDelaySeconds: {{ .Values.frrk8s.livenessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.frrk8s.livenessProbe.periodSeconds }}
           timeoutSeconds: {{ .Values.frrk8s.livenessProbe.timeoutSeconds }}
@@ -322,16 +341,16 @@ spec:
         {{- if .Values.frrk8s.readinessProbe.enabled }}
         readinessProbe:
           httpGet:
-            path: /metrics
-            port: monitoring
-            host: {{ template "prometheus.metricsAddress" . }}
+            path: /readyz
+            port: 7572
+            host: 127.0.0.1
           initialDelaySeconds: {{ .Values.frrk8s.readinessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.frrk8s.readinessProbe.periodSeconds }}
           timeoutSeconds: {{ .Values.frrk8s.readinessProbe.timeoutSeconds }}
           successThreshold: {{ .Values.frrk8s.readinessProbe.successThreshold }}
           failureThreshold: {{ .Values.frrk8s.readinessProbe.failureThreshold }}
         {{- end }}
-        {{- with .Values.frrk8s.resources }}
+        {{- with .Values.frrk8s.controller.resources }}
         resources:
           {{- toYaml . | nindent 10 }}
         {{- end }}
@@ -344,10 +363,17 @@ spec:
             add:
             - NET_RAW
         volumeMounts:
-          - name: reloader
-            mountPath: /etc/frr_reloader
+        - name: reloader
+          mountPath: /etc/frr_reloader
+        {{- if .Values.tls.metricsTLSSecret }}
+        - name: metrics-certs
+          mountPath: /etc/metrics
+          readOnly: true
+        {{- end }}
       - name: frr
         securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
           capabilities:
             add:
             - NET_ADMIN
@@ -366,9 +392,10 @@ spec:
           mountPath: /var/run/frr
         - name: frr-conf
           mountPath: /etc/frr
-        # The command is FRR's default entrypoint & waiting for the log file to appear and tailing it.
-        # If the log file isn't created in 60 seconds the tail fails and the container is restarted.
-        # This workaround is needed to have the frr logs as part of kubectl logs -c frr < controller_pod_name >.
+        - name: frr-lib
+          mountPath: /var/lib/frr
+        - name: frr-tmp
+          mountPath: /var/tmp/frr
         command:
         {{- if .Values.frrk8s.frr.extraCommand }}
         {{- with .Values.frrk8s.frr.extraCommand }}
@@ -377,14 +404,7 @@ spec:
         {{- else }}
         - /bin/sh
         - -c
-        - |
-          /sbin/tini -- /usr/lib/frr/docker-start &
-          attempts=0
-          until [[ -f /etc/frr/frr.log || $attempts -eq 60 ]]; do
-            sleep 1
-            attempts=$(( $attempts + 1 ))
-          done
-          tail -f /etc/frr/frr.log
+        - /sbin/tini -- /usr/lib/frr/docker-start
         {{- end }}
         {{- if .Values.frrk8s.frr.extraArgs }}
         args:
@@ -400,8 +420,8 @@ spec:
         livenessProbe:
           httpGet:
             path: /livez
-            port: {{ .Values.frrk8s.frr.metricsPort }}
-            host: {{ template "frrk8s.frr.metricsAddress" . }}
+            port: {{ .Values.frrk8s.frr.secureMetricsPort }}
+            scheme: HTTPS
           periodSeconds: {{ .Values.frrk8s.livenessProbe.periodSeconds }}
           failureThreshold: {{ .Values.frrk8s.livenessProbe.failureThreshold }}
         {{- end }}
@@ -409,8 +429,8 @@ spec:
         startupProbe:
           httpGet:
             path: /livez
-            port: {{ .Values.frrk8s.frr.metricsPort }}
-            host: {{ template "frrk8s.frr.metricsAddress" . }}
+            port: {{ .Values.frrk8s.frr.secureMetricsPort }}
+            scheme: HTTPS
           failureThreshold: {{ .Values.frrk8s.startupProbe.failureThreshold }}
           periodSeconds: {{ .Values.frrk8s.startupProbe.periodSeconds }}
         {{- end }}
@@ -460,12 +480,25 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
         {{- else }}
-        - --metrics-port={{ .Values.frrk8s.frr.metricsPort }}
-        - --metrics-bind-address={{ .Values.frrk8s.frr.metricsBindAddress }}
+        - --metrics-port={{ .Values.frrk8s.frr.secureMetricsPort }}
+        - --metrics-bind-address=0.0.0.0
+        {{- if .Values.tls.metricsTLSSecret }}
+        - --tls-cert-file=/etc/metrics/tls.crt
+        - --tls-private-key-file=/etc/metrics/tls.key
+        {{- end }}
+        {{- if .Values.tls.cipherSuites }}
+        - --tls-cipher-suites={{ .Values.tls.cipherSuites }}
+        {{- end }}
+        {{- if .Values.tls.curvePreferences }}
+        - --tls-curve-preferences={{ .Values.tls.curvePreferences }}
+        {{- end }}
+        {{- if .Values.tls.minVersion }}
+        - --tls-min-version={{ .Values.tls.minVersion }}
+        {{- end }}
         {{- end }}
         ports:
-        - containerPort: {{ .Values.frrk8s.frr.metricsPort }}
-          name: monitoring
+        - containerPort: {{ .Values.frrk8s.frr.secureMetricsPort }}
+          name: frrmetricshttps
         volumeMounts:
         - name: frr-sockets
           mountPath: /var/run/frr
@@ -473,6 +506,11 @@ spec:
           mountPath: /etc/frr
         - name: metrics
           mountPath: /etc/frr_metrics
+        {{- if .Values.tls.metricsTLSSecret }}
+        - name: metrics-certs
+          mountPath: /etc/metrics
+          readOnly: true
+        {{- end }}
         {{- with .Values.frrk8s.frrMetrics.resources }}
         resources:
           {{- toYaml . | nindent 10 }}
@@ -495,6 +533,9 @@ spec:
         - --node-name=$(NODE_NAME)
         - --namespace=$(NAMESPACE)
         - --pod-name=$(POD_NAME)
+        {{- with .Values.frrk8s.logLevel }}
+        - --log-level={{ . }}
+        {{- end }}
         {{- if .Values.frrk8s.frrStatus.pollInterval }}
         - --poll-interval={{ .Values.frrk8s.frrStatus.pollInterval }}
         {{- end }}
@@ -523,82 +564,6 @@ spec:
         {{- with .Values.frrk8s.frrStatus.resources }}
         resources:
           {{- toYaml . | nindent 10 }}
-        {{- end }}
-      - name: kube-rbac-proxy
-        image: {{ .Values.prometheus.rbacProxy.repository }}:{{ .Values.prometheus.rbacProxy.tag }}
-        imagePullPolicy: {{ .Values.prometheus.rbacProxy.pullPolicy }}
-        {{- if .Values.prometheus.rbacProxy.extraCommand }}
-        command:
-        {{- with .Values.prometheus.rbacProxy.extraCommand }}
-        {{- toYaml . | nindent 8 }}
-        {{- end }}
-        {{- end }}
-        args:
-        {{- if .Values.prometheus.rbacProxy.extraArgs }}
-        {{- with .Values.prometheus.rbacProxy.extraArgs }}
-        {{- toYaml . | nindent 8 }}
-        {{- end }}
-        {{- else }}
-        - --logtostderr
-        - --secure-listen-address=:{{ .Values.prometheus.secureMetricsPort }}
-        - --upstream=http://{{ template "prometheus.metricsAddress" . }}:{{ .Values.prometheus.metricsPort }}/
-        - --tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256
-        {{- if .Values.prometheus.metricsTLSSecret }}
-        - --tls-private-key-file=/etc/metrics/tls.key
-        - --tls-cert-file=/etc/metrics/tls.crt
-        {{- end }}
-        {{- end }}
-        ports:
-        - containerPort: {{ .Values.prometheus.secureMetricsPort }}
-          name: metricshttps
-        {{- with .Values.prometheus.rbacProxy.resources }}
-        resources:
-          {{- toYaml . | nindent 10 }}
-        {{- end }}
-        terminationMessagePolicy: FallbackToLogsOnError
-        {{- if .Values.prometheus.metricsTLSSecret }}
-        volumeMounts:
-        - name: metrics-certs
-          mountPath: /etc/metrics
-          readOnly: true
-        {{- end }}
-      - name: kube-rbac-proxy-frr
-        image: {{ .Values.prometheus.rbacProxy.repository }}:{{ .Values.prometheus.rbacProxy.tag | default .Chart.AppVersion }}
-        imagePullPolicy: {{ .Values.prometheus.rbacProxy.pullPolicy }}
-        {{- if .Values.prometheus.rbacProxyFrr.extraCommand }}
-        command:
-        {{- with .Values.prometheus.rbacProxyFrr.extraCommand }}
-        {{- toYaml . | nindent 8 }}
-        {{- end }}
-        {{- end }}
-        args:
-        {{- if .Values.prometheus.rbacProxyFrr.extraArgs }}
-        {{- with .Values.prometheus.rbacProxyFrr.extraArgs }}
-        {{- toYaml . | nindent 8 }}
-        {{- end }}
-        {{- else }}
-        - --logtostderr
-        - --secure-listen-address=:{{ .Values.frrk8s.frr.secureMetricsPort }}
-        - --tls-cipher-suites=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256
-        - --upstream=http://{{ template "frrk8s.frr.metricsAddress" . }}:{{ .Values.frrk8s.frr.metricsPort }}/
-        {{- if .Values.prometheus.metricsTLSSecret }}
-        - --tls-private-key-file=/etc/metrics/tls.key
-        - --tls-cert-file=/etc/metrics/tls.crt
-        {{- end }}
-        {{- end }}
-        ports:
-        - containerPort: {{ .Values.frrk8s.frr.secureMetricsPort }}
-          name: metricshttps
-        {{- with .Values.prometheus.rbacProxyFrr.resources }}
-        resources:
-          {{- toYaml . | nindent 10 }}
-        {{- end }}
-        terminationMessagePolicy: FallbackToLogsOnError
-        {{- if .Values.prometheus.metricsTLSSecret }}
-        volumeMounts:
-        - name: metrics-certs
-          mountPath: /etc/metrics
-          readOnly: true
         {{- end }}
       nodeSelector:
         "kubernetes.io/os": linux

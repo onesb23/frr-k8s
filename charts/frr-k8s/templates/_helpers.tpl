@@ -61,25 +61,3 @@ Create the name of the frrk8s service account to use
 {{- default "default" .Values.frrk8s.serviceAccount.name }}
 {{- end }}
 {{- end }}
-
-{{/*
-Check if exist 'prometheus.metricsAddress' and print
-*/}}
-{{- define "prometheus.metricsAddress" -}}
-{{- if .Values.prometheus.metricsAddress }}
-{{- printf "%s" .Values.prometheus.metricsAddress }}
-{{- else }}
-{{- printf "%s" .Values.prometheus.metricsBindAddress }}
-{{- end }}
-{{- end }}
-
-{{/*
-Check if exist 'frrk8s.frr.metricsAddress' and print
-*/}}
-{{- define "frrk8s.frr.metricsAddress" -}}
-{{- if .Values.frrk8s.frr.metricsAddress }}
-{{- printf "%s" .Values.frrk8s.frr.metricsAddress }}
-{{- else }}
-{{- printf "%s" .Values.frrk8s.frr.metricsBindAddress }}
-{{- end }}
-{{- end }}
