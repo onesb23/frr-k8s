@@ -49,7 +49,6 @@ spec:
         {{- end }}
         args:
         {{- if .Values.frrk8s.statusCleaner.extraArgs }}
-        args:
         {{- with .Values.frrk8s.statusCleaner.extraArgs }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
