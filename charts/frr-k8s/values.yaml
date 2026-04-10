@@ -113,6 +113,7 @@ frrk8s:
   ## By default secretName: {{ "metallb.fullname" }}-memberlist
   ##
   # secretName:
+  # -- Node selector for pod assignment.
   nodeSelector: {}
   # -- Tolerations for pod assignment.
   tolerations: []
@@ -174,6 +175,7 @@ frrk8s:
   ## Note: Enabling this proved useful for the webhook's stability when it is redeployed multiple times in succession.
   # -- Specifies whether the pod restarts when the rotator refreshes the cert secret. Useful for webhook stability during redeployments.
   restartOnRotatorSecretRefresh: false
+  # frr contains configuration specific to the FRR container,
   ## If true, then used manual created configMap with name <frrk8s.fullname>-frr-startup-extra
   extraConfigsStartup: false
   ## Additional specs for custom initContainers
