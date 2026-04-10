@@ -92,7 +92,7 @@ frrk8s:
     repository: quay.io/metallb/frr-k8s
     # -- The frr-k8s image tag. If not set, defaults to the chart appVersion.
     tag:
-    # -- The frr-k8s image pull policy, "Always".
+    # -- The frr-k8s image pull policy. Available values: "Always", "IfNotPresent", "Never".
     pullPolicy: IfNotPresent
   ## @param controller.updateStrategy.type FRR-K8s controller daemonset strategy type
   ## ref: https://kubernetes.io/docs/tasks/manage-daemon/update-daemon-set/
@@ -195,7 +195,7 @@ frrk8s:
       repository: quay.io/frrouting/frr
       # -- The FRR image tag.
       tag: 10.4.3
-      # -- The FRR image pull policy, "Always".
+      # -- The FRR image pull policy. Available values: "Always", "IfNotPresent", "Never".
       pullPolicy: IfNotPresent
     # -- Resource limits and requests for the FRR container.
     resources: {}
